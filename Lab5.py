@@ -23,7 +23,8 @@ nltk.download('wordnet')
 nltk.download('omw-1.4')
 
 # 1. Cargar el dataset
-df = pd.read_csv('C:\\Users\\gegdg\\OneDrive\\Documentos\\.UVG\\Anio4\\Ciclo2\\Data_Science\\Lab5\\Lab5-Data-Science\\train.csv')
+df = pd.read_csv('C:\\Users\\manue\\OneDrive\\Escritorio\\Data_Science\\Lab5\\nlp-getting-started\\train.csv')
+
 # Descripción inicial de los datos
 print("Descripción del conjunto de datos:")
 print(df.info())
@@ -158,6 +159,89 @@ logreg_search = RandomizedSearchCV(LogisticRegression(max_iter=200, random_state
 logreg_search.fit(X_train_vect, y_train)
 print("Mejores hiperparámetros para Logistic Regression:")
 print(logreg_search.best_params_)
+
+y_pred_logreg_opt = logreg_search.best_estimator_.predict(X_test_vect)
+print("\nInforme de clasificación para Logistic Regression Optimizado:")
+print(classification_report(y_test, y_pred_logreg_opt))
+print("\nMatriz de confusión para Logistic Regression Optimizado:")
+print(confusion_matrix(y_test, y_pred_logreg_opt))
+
+# XGBoost con RandomizedSearchCV
+xgb_params = {
+    'n_estimators': randint(100, 1000),
+    'max_depth': randint(3, 10),
+    'learning_rate': uniform(0.01, 0.3),
+    'subsample': uniform(0.7, 0.3),
+    'colsample_bytree': uniform(0.5, 0.5)
+}
+
+xgb_search = RandomizedSearchCV(XGBClassifier(eval_metric='logloss', random_state=42), 
+                                param_distributions=xgb_params, 
+                                n_iter=20, 
+                                cv=5, 
+                                scoring='accuracy', 
+                                random_state=42, 
+                                n_jobs=-1)
+
+xgb_search.fit(X_train_extra, y_train)
+print("Mejores hiperparámetros para XGBoost:")
+print(xgb_search.best_params_)
+
+y_pred_xgb_opt = xgb_search.best_estimator_.predict(X_test_extra)
+print("\nInforme de clasificación para XGBoost Optimizado:")
+print(classification_report(y_test, y_pred_xgb_opt))
+print("\nMatriz de confusión para XGBoost Optimizado:")
+print(confusion_matrix(y_test, y_pred_xgb_opt))
+
+# Ensemble con Voting Classifier
+ensemble_model = VotingClassifier(estimators=[
+    ('logreg', logreg_search.best_estimator_),
+    ('xgb', xgb_search.best_estimator_)
+], voting='soft')
+
+ensemble_model.fit(X_train_extra, y_train)
+y_pred_ensemble = ensemble_model.predict(X_test_extra)
+print("\nInforme de clasificación para Ensemble Voting Classifier:")
+print(classification_report(y_test, y_pred_ensemble))
+print("\nMatriz de confusión para Ensemble Voting Classifier:")
+print(confusion_matrix(y_test, y_pred_ensemble))
+
+# 6. Curvas ROC y Precision-Recall
+
+# Curva ROC y AUC para el modelo XGBoost optimizado
+y_pred_xgb_opt_proba = xgb_search.best_estimator_.predict_proba(X_test_extra)[:, 1]
+fpr, tpr, _ = roc_curve(y_test, y_pred_xgb_opt_proba)
+roc_auc = roc_auc_score(y_test, y_pred_xgb_opt_proba)
+
+plt.figure()
+plt.plot(fpr, tpr, color='orange', lw=2, label=f'Curva ROC (AUC = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic - XGBoost')
+plt.legend(loc="lower right")
+plt.show()
+
+# Curva Precision-Recall para el modelo XGBoost optimizado
+precision, recall, _ = precision_recall_curve(y_test, y_pred_xgb_opt_proba)
+plt.figure()
+plt.plot(recall, precision, color='blue', lw=2, label='Curva Precision-Recall')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall curve - XGBoost')
+plt.legend(loc="lower left")
+plt.show()
+
+# 7. Guardar el mejor modelo entrenado
+import joblib
+
+# Guardar el modelo XGBoost optimizado
+joblib.dump(xgb_search.best_estimator_, 'xgb_best_model.pkl')
+
+# Guardar el modelo de Ensemble
+joblib.dump(ensemble_model, 'ensemble_voting_classifier.pkl')
+
+print("Modelos entrenados y guardados exitosamente.")
 
 y_pred_logreg_opt = logreg_search.best_estimator_.predict(X_test_vect)
 print("\nInforme de clasificación para Logistic Regression Optimizado:")
