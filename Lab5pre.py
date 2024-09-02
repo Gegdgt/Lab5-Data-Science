@@ -20,7 +20,7 @@ nltk.download('omw-1.4')
 from nltk.stem import WordNetLemmatizer
 
 # 1. Cargar el dataset
-df = pd.read_csv('C:\\Users\\manue\\OneDrive\\Escritorio\\Data_Science\\Lab5\\nlp-getting-started\\train.csv')
+df = pd.read_csv('C:\\Users\\gegdg\\OneDrive\\Documentos\\.UVG\\Anio4\\Ciclo2\\Data_Science\\Lab5\\Lab5-Data-Science\\train.csv')
 
 # Descripción inicial de los datos
 print("Descripción del conjunto de datos:")
